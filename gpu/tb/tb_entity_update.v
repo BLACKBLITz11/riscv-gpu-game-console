@@ -4,6 +4,7 @@
 //   dead (alive==0): nothing changes
 //   alive: pos = (pos+vel)&255 ; hit if |dx|<=8 && |dy|<=8 vs shot (global mem 2,3)
 //          hit -> alive=0 ; pos written back either way
+// Shot slots 1..3 (global words 4..9) are parked at 1000 so they never hit.
 module tb_entity_update;
     localparam N = 32;
     reg clk = 0, rst;
@@ -86,6 +87,8 @@ module tb_entity_update;
         @(negedge clk); rst = 0;
         uut.mem.mem[0] = 32'd50; uut.mem.mem[1] = 32'd60;   // player (unused, must stay)
         uut.mem.mem[2] = shx;    uut.mem.mem[3] = shy;       // shot
+        uut.mem.mem[4] = 1000; uut.mem.mem[5] = 1000; uut.mem.mem[6] = 1000;
+        uut.mem.mem[7] = 1000; uut.mem.mem[8] = 1000; uut.mem.mem[9] = 1000;   // slots 1..3 parked
         -> load_ev;
 
         cyc = 0;
@@ -116,7 +119,8 @@ module tb_entity_update;
             end
         end
         // global memory must be read-only for this program
-        if (uut.mem.mem[0] !== 50 || uut.mem.mem[1] !== 60 || uut.mem.mem[2] !== shx || uut.mem.mem[3] !== shy) begin
+        if (uut.mem.mem[0] !== 50 || uut.mem.mem[1] !== 60 || uut.mem.mem[2] !== shx || uut.mem.mem[3] !== shy ||
+            uut.mem.mem[4] !== 1000 || uut.mem.mem[9] !== 1000) begin
             errors = errors + 1; $display("FAIL: global memory was modified");
         end
     end

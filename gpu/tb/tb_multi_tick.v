@@ -5,6 +5,8 @@
 //   - player / shot positions written via host_* port between ticks
 //   - every tick, including the first, started with a `start` pulse
 //     (START_HALTED=1: cores wait after reset)
+// Shot slots 1..3 (global words 4..9) are parked at 1000 so they never hit.
+// Run from the repo root (the hex path below is relative to it).
 // No hierarchical WRITES anywhere; hierarchy is only used to READ results.
 module tb_multi_tick;
     localparam N = 32, TICKS = 40;
@@ -122,7 +124,7 @@ module tb_multi_tick;
 
     initial begin
         seed = 32'hBADC0DE;
-        $readmemh("entity_update.hex", prog_img);
+        $readmemh("gpu/sw/entity_update.hex", prog_img);
 
         // ---- power-on: single reset, cores come up halted ----
         rst = 1; repeat (3) @(posedge clk);
@@ -142,6 +144,9 @@ module tb_multi_tick;
         host_write(10'd0, 32'd50); host_write(10'd1, 32'd60);
         host_write(10'd2, 32'd0);  host_write(10'd3, 32'd0);
         sx = 0; sy = 0;
+        host_write(10'd4, 32'd1000); host_write(10'd5, 32'd1000);
+        host_write(10'd6, 32'd1000); host_write(10'd7, 32'd1000);
+        host_write(10'd8, 32'd1000); host_write(10'd9, 32'd1000);   // slots 1..3 parked
 
         // ---- spawn all entities through the spawn port (a few born dead), then read back ----
         for (i = 0; i < N; i = i + 1) begin
@@ -197,7 +202,8 @@ module tb_multi_tick;
                         t, i, o_px[i], o_py[i], o_al[i], m_px[i], m_py[i], m_al[i]);
                 end
             end
-            if (uut.mem.mem[0] !== 50 || uut.mem.mem[1] !== 60 || uut.mem.mem[2] !== sx || uut.mem.mem[3] !== sy) begin
+            if (uut.mem.mem[0] !== 50 || uut.mem.mem[1] !== 60 || uut.mem.mem[2] !== sx || uut.mem.mem[3] !== sy ||
+                uut.mem.mem[4] !== 1000 || uut.mem.mem[9] !== 1000) begin
                 errors = errors + 1; $display("FAIL tick %0d: global memory not as host wrote it", t);
             end
         end

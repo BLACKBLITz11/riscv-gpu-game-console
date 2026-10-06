@@ -4,6 +4,8 @@
 // independent model built from the reference entity state.
 // Also checks: start / spawn are ignored while a frame is rendering, and
 // render_start is ignored mid-tick or when sent together with start.
+// Shot slots 1..3 (global words 4..9) are parked at 1000 so they never hit.
+// Run from the repo root (the hex path below is relative to it).
 module tb_framebuffer;
     localparam N = 32, TICKS = 30;
     reg clk = 0, rst, start = 0, render_start = 0;
@@ -129,13 +131,16 @@ module tb_framebuffer;
 
     initial begin
         seed = 32'hFACADE;
-        $readmemh("entity_update.hex", prog_img);
+        $readmemh("gpu/sw/entity_update.hex", prog_img);
         rst = 1; repeat (3) @(posedge clk); @(negedge clk); rst = 0; #1;
         if (!all_done) begin errors = errors + 1; $display("FAIL: cores not halted after reset"); end
         plen_words = 0;
         while (prog_img[plen_words] !== 32'hxxxxxxxx && plen_words < 256) plen_words = plen_words + 1;
         for (i = 0; i < plen_words; i = i + 1) prog_write(i, prog_img[i]);
         host_write(10'd2, 0); host_write(10'd3, 0); sx = 0; sy = 0;
+        host_write(10'd4, 32'd1000); host_write(10'd5, 32'd1000);
+        host_write(10'd6, 32'd1000); host_write(10'd7, 32'd1000);
+        host_write(10'd8, 32'd1000); host_write(10'd9, 32'd1000);   // slots 1..3 parked
         for (i = 0; i < N; i = i + 1) begin random_entity(i, (i % 8 == 0) ? 1'b0 : 1'b1); spawn_entity(i); end
 
         // frame 0: before any tick, straight from the spawned state
