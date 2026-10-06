@@ -1,0 +1,7 @@
+sim/simwork/
+__pycache__/
+*.pyc
+*.vvp
+*.vcd
+*.log
+sim/cpusimwork/
