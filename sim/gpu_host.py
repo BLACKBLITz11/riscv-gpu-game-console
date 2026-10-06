@@ -29,7 +29,7 @@ class GpuSim:
     def __init__(self, program='entity_update.asm', work='simwork'):
         self.work = os.path.join(HERE, work)
         shutil.rmtree(self.work, ignore_errors=True)
-        os.makedirs(self.work)
+        os.makedirs(self.work, exist_ok=True)
         for tool in ('iverilog', 'vvp'):
             if shutil.which(tool) is None:
                 raise SystemExit(f"'{tool}' not found on PATH - install Icarus Verilog first.")

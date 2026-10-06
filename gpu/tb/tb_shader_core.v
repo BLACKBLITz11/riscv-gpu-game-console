@@ -17,7 +17,9 @@ module tb_shader_core;
         .clk(clk), .rst(rst), .instruction(instruction),
         .done(done), .halted(halted),
         .mem_req(mem_req), .mem_we(mem_we), .mem_addr(mem_addr),
-        .mem_wdata(mem_wdata), .mem_rdata(mem_rdata), .mem_grant(mem_grant)
+        .mem_wdata(mem_wdata), .mem_rdata(mem_rdata), .mem_grant(mem_grant),
+        .host_lm_we(1'b0), .host_lm_addr(6'b0), .host_lm_wdata(32'b0),
+        .host_lm_raddr(6'b0)
     );
 
     always #5 clk = ~clk;

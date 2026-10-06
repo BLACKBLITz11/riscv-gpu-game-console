@@ -5,7 +5,7 @@ module tb_local_mem;
     reg [31:0] instruction;
     wire done, halted;
     wire mem_req, mem_we;
-    wire [7:0] mem_addr;
+    wire [9:0] mem_addr;
     wire [31:0] mem_wdata;
     reg  [31:0] mem_rdata;
     reg  mem_grant = 1;
@@ -17,9 +17,10 @@ module tb_local_mem;
         .clk(clk), .rst(rst), .instruction(instruction),
         .done(done), .halted(halted),
         .mem_req(mem_req), .mem_we(mem_we), .mem_addr(mem_addr),
-        .mem_wdata(mem_wdata), .mem_rdata(mem_rdata), .mem_grant(mem_grant)
+        .mem_wdata(mem_wdata), .mem_rdata(mem_rdata), .mem_grant(mem_grant),
+        .host_lm_we(1'b0), .host_lm_addr(6'b0), .host_lm_wdata(32'b0),
+        .host_lm_raddr(6'b0)
     );
-
     always #5 clk = ~clk;
 
     localparam OP_MOVI=21, OP_STR=20, OP_LDR=19;
