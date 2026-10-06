@@ -14,3 +14,5 @@ A hobby game console built from scratch: a custom RV32I CPU and a custom 32-core
     python game_cpu.py
 
 Requires Icarus Verilog (iverilog/vvp) and Python 3.
+
+Run all GPU testbenches from the repo root: powershell -ExecutionPolicy Bypass -File .\run_tests.ps1
