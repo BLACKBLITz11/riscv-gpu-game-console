@@ -78,6 +78,9 @@ class CpuSim(GpuSim):
         lines = self.run([f'BUTTONS {buttons}', 'FRAME', 'DUMP'])
         r = self.parse(lines)
         hosts = next(tuple(int(x) for x in l.split()[1:11]) for l in lines if l.startswith('HOSTS'))
+        k = next((l.split() for l in lines if l.startswith('KILLS')), None)
+        self.kills = int(k[1]) if k else None          # the CPU's own kill total (register s4)
+        self.prev_alive = int(k[2]) if k else None     # register s3
         return r['tick'], r['entities'], hosts
 
 
@@ -104,6 +107,30 @@ def selftest(frames=40):
     print("=== OK ===" if ok else "=== FAILED ===")
     return ok
 
+def kill_test(frames=150):
+    """The CPU's own kill total (s4) must match the enemies that really died."""
+    sim = CpuSim()
+    ok = True
+    alive_prev = N_CORES                      # entities alive in the previous frame
+    for i in range(frames):
+        sweep = BTN_LEFT if (i // 25) % 2 else BTN_RIGHT
+        tick, ents, hosts = sim.frame(BTN_FIRE | sweep | (3 << LEVEL_SHIFT))
+        # s4 lags one frame: at this point the CPU has counted the renders up to the previous frame
+        if sim.kills != N_CORES - alive_prev:
+            print(f"frame {i + 1}: CPU kills {sim.kills}, expected {N_CORES - alive_prev}")
+            ok = False
+            break
+        alive_prev = sum(e[1] for e in ents)
+    print(f"after the run: enemies dead {N_CORES - alive_prev}, CPU kill counter {sim.kills}")
+    if N_CORES - alive_prev == 0:
+        print("WARNING: no enemy died, so this test proves nothing")
+        ok = False
+    sim.close()
+    print("=== KILL COUNTER OK ===" if ok else "=== KILL COUNTER FAILED ===")
+    return ok
 
 if __name__ == '__main__':
-    sys.exit(0 if selftest() else 1)
+    ok = selftest()
+    if '--kills' in sys.argv:
+        ok = kill_test() and ok
+    sys.exit(0 if ok else 1)

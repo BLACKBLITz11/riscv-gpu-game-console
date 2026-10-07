@@ -139,6 +139,7 @@ module sim_cpu_server;
                                      host_shadow[0], host_shadow[1], host_shadow[2], host_shadow[3],
                                      host_shadow[4], host_shadow[5], host_shadow[6], host_shadow[7],
                                      host_shadow[8], host_shadow[9]);
+                        $fdisplay(rfd, "KILLS %0d %0d", cpu.u_core.u_rf.regs[20], cpu.u_core.u_rf.regs[19]);
                     end
                     else if (word == "QUIT") begin
                         $fdisplay(rfd, "OK");
