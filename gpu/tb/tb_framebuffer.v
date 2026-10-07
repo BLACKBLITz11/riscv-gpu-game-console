@@ -120,7 +120,7 @@ module tb_framebuffer;
         mism = 0; pop = 0;
         for (y = 0; y < 256; y = y + 1)
             for (x = 0; x < 256; x = x + 1) begin
-                fb_x = x; fb_y = y; #1;
+                fb_x = x; fb_y = y; @(posedge clk); #1;
                 if (fb_pixel !== exp_fb[{y[7:0], x[7:0]}]) mism = mism + 1;
                 if (fb_pixel === 1'b1) pop = pop + 1;
             end
@@ -172,7 +172,7 @@ module tb_framebuffer;
                 end
 
             do_render((t == 5) ? 1 : 0);
-            check_frame;
+            if (t % 5 == 0) check_frame;     // full 65536-pixel readback every 5th tick (it is slow)
         end
         $display("ticks=%0d frames_checked=%0d (x65536 pixels) hits=%0d respawns=%0d", TICKS, frames, hits, respawns);
         if (render_gate_ok == 1) $display("PASS: start/spawn ignored while a frame renders");

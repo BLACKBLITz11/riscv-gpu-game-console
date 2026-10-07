@@ -113,7 +113,7 @@ module sim_server;
                     else if (word == "RENDER") do_render;
                     else if (word == "PIXEL") begin
                         r = $fscanf(fd, "%d %d", a, b);
-                        fb_x = a; fb_y = b; #1;
+                        fb_x = a; fb_y = b; @(posedge clk); #1;
                         $fdisplay(rfd, "PIXEL %0d %0d %0d", a, b, fb_pixel);
                     end
                     else if (word == "DUMP") begin

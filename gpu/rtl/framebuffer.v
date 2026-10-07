@@ -46,7 +46,11 @@ module framebuffer #(
     assign peek_core = c;
     assign peek_addr = (sub == 2'd0) ? ADDR_ALIVE[5:0] :
                        (sub == 2'd1) ? ADDR_X[5:0]     : ADDR_Y[5:0];
-    assign rd_pixel  = fb[{rd_y, rd_x}];
+    // registered (synchronous) read: lets the tools use block RAM on the FPGA.
+    // rd_pixel is valid one clock after rd_x / rd_y change.
+    reg rd_pixel_r;
+    always @(posedge clk) rd_pixel_r <= fb[{rd_y, rd_x}];
+    assign rd_pixel  = rd_pixel_r;
 
     // ONE write port into the pixel memory, so the tools can build it as a RAM:
     // ERASE clears last frame's pixel, DRAW sets this frame's pixel.
