@@ -31,6 +31,7 @@ module sim_cpu_server;
     wire [4:0]  spawn_core;
     wire [5:0]  spawn_addr;
     wire        all_done, render_busy, render_done, fb_pixel;
+    wire [7:0]  alive_count;
 
     wire        g_prog_we   = prog_we | ld_we;
     wire [7:0]  g_prog_addr = ld_we ? ld_addr : prog_addr;
@@ -46,7 +47,7 @@ module sim_cpu_server;
         .start(start), .prog_we(prog_we), .prog_addr(prog_addr), .prog_data(prog_data),
         .host_we(host_we), .host_addr(host_addr), .host_wdata(host_wdata),
         .spawn_we(spawn_we), .spawn_core(spawn_core), .spawn_addr(spawn_addr), .spawn_data(spawn_data),
-        .render_start(render_start), .all_done(all_done), .render_busy(render_busy));
+        .render_start(render_start), .all_done(all_done), .render_busy(render_busy), .alive_count(alive_count));
 
     gpu_top #(.N_CORES(N), .START_HALTED(1), .HAS_FB(1)) uut (
         .clk(clk), .rst(gpu_rst), .start(start), .all_done(all_done),
@@ -54,7 +55,7 @@ module sim_cpu_server;
         .host_we(host_we), .host_addr(host_addr), .host_wdata(host_wdata),
         .spawn_we(spawn_we), .spawn_core(spawn_core), .spawn_addr(spawn_addr), .spawn_data(spawn_data),
         .render_start(render_start), .render_busy(render_busy), .render_done(render_done),
-        .fb_x(8'd0), .fb_y(8'd0), .fb_pixel(fb_pixel));
+        .fb_x(8'd0), .fb_y(8'd0), .fb_pixel(fb_pixel), .alive_count(alive_count));
 
     // clock only runs while a command is executing
     always #5 if (clk_en) clk = ~clk;

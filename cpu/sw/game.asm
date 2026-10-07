@@ -8,6 +8,7 @@
 .equ GPU_START,      0x10
 .equ GPU_STATUS,     0x14
 .equ GPU_RENDER,     0x18
+.equ GPU_ALIVE,      0x50       # read-only: alive enemies after the last render
 .equ GPU_SPAWN_CORE, 0x1C
 .equ GPU_SPAWN_ADDR, 0x20
 .equ GPU_SPAWN_DATA, 0x24
@@ -40,6 +41,7 @@
 #   s6 = random state    s7 = entity index   s8 = saved return address
 #   s9 = fire cooldown   s10 = buttons       s11 = shot slots in use (weapon level, 1..4)
 # data RAM: shot slot k at byte 8k: x at +0, y at +4 (y > 255 means the slot is free)
+#   s3 = alive count after the previous frame     s4 = total kills
 
 start:
     lui  s0, 0x40000
@@ -47,6 +49,7 @@ start:
     li   s2, PLAYER_Y
     li   s6, 0x2545F491
     li   s9, 0
+    li   s4, 0                      # kill total    
     li   t4, 0                      # park all four shot slots
     li   t5, PARKED
 init_slots:
@@ -155,6 +158,15 @@ wait_tick:                          # wait for all_done
 delay:
     addi t0, t0, -1
     bnez t0, delay
+
+wait_render:                        # wait for the frame to finish drawing
+    lw   t0, GPU_STATUS(s0)
+    andi t0, t0, 2                  # bit 1 = render_busy
+    bnez t0, wait_render
+    lw   t0, GPU_ALIVE(s0)          # alive enemies in the frame just drawn
+    sub  t1, s3, t0                 # kills this frame = alive before - alive now
+    add  s4, s4, t1                 # running kill total
+    mv   s3, t0
     j    frame
 
 # ---- spawn a wave: 32 enemies, x 8..246, y 8..102, vx +-(1..2), vy 0..1 ----
@@ -209,6 +221,7 @@ vx_pos:
     addi s7, s7, 1
     li   t0, N_ENTITIES
     blt  s7, t0, spawn_loop
+    li   s3, N_ENTITIES             # a new wave has all 32 alive
     jalr zero, s8, 0                # return
 
 rng:                                # xorshift32 on s6, result in a0
