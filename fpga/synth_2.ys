@@ -1,4 +1,4 @@
-read_verilog -sv -DSMALL_ALU gpu/rtl/gpu_top.v gpu/rtl/mem_ctrl.v gpu/rtl/framebuffer.v gpu/rtl/shader_core.v gpu/rtl/gpu_alu.v gpu/rtl/gpu_reg_file.v gpu/rtl/gpu_prog_counter.v
+read_verilog -sv -DSMALL_ALU -DRF_NO_RESET gpu/rtl/gpu_top.v gpu/rtl/mem_ctrl.v gpu/rtl/framebuffer.v gpu/rtl/shader_core.v gpu/rtl/gpu_alu.v gpu/rtl/gpu_reg_file.v gpu/rtl/gpu_prog_counter.v
 chparam -set N_CORES 2 -set START_HALTED 1 -set HAS_FB 1 gpu_top
 synth_xilinx -top gpu_top -family xc7 -flatten -run :map_luts
 opt_expr -mux_undef -noclkinv
