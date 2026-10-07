@@ -21,6 +21,7 @@
 .equ BTN_RIGHT,   8
 .equ BTN_FIRE,    16
 .equ BTN_RESPAWN, 32            # request a new wave of 32 enemies
+.equ BTN_RESTART, 2             # restart the game: kill total back to 0 and a fresh wave
 .equ LEVEL_SHIFT, 6
 
 # game tuning
@@ -73,9 +74,27 @@ wait_idle:                          # GPU idle = all_done 1 and render_busy 0
     beqz t1, no_respawn
     jal  ra, spawn_wave
 no_respawn:
-    srli s11, s10, LEVEL_SHIFT      # weapon level = bits 7:6 + 1
+    andi t1, s10, BTN_RESTART       # restart: kill total back to 0 and a fresh wave
+    beqz t1, no_restart
+    li   s4, 0
+    jal  ra, spawn_wave
+no_restart:
+    li   t1, 1                      # weapon level from the score (10 points per kill):
+    slti t2, s4, 10                 # 1 + (kills >= 10) + (kills >= 30) + (kills >= 60)
+    xori t2, t2, 1
+    add  t1, t1, t2
+    slti t2, s4, 30
+    xori t2, t2, 1
+    add  t1, t1, t2
+    slti t2, s4, 60
+    xori t2, t2, 1
+    add  t1, t1, t2
+    srli s11, s10, LEVEL_SHIFT      # level from the switches = bits 7:6 + 1
     andi s11, s11, 3
     addi s11, s11, 1
+    bge  s11, t1, level_done        # use the higher of the two
+    mv   s11, t1
+level_done:
 
     andi t1, s10, BTN_LEFT
     beqz t1, no_left
@@ -167,6 +186,8 @@ wait_render:                        # wait for the frame to finish drawing
     sub  t1, s3, t0                 # kills this frame = alive before - alive now
     add  s4, s4, t1                 # running kill total
     mv   s3, t0
+    bnez t0, frame                  # enemies left: next frame
+    jal  ra, spawn_wave             # wave cleared: 32 new enemies (also sets s3 = 32)
     j    frame
 
 # ---- spawn a wave: 32 enemies, x 8..246, y 8..102, vx +-(1..2), vy 0..1 ----

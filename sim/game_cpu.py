@@ -16,8 +16,7 @@ Division of labour:
                      (the CPU cannot read enemy state back yet - see the GPU host contract, section 8)
 """
 import sys, time, argparse
-from cpu_host import CpuSim, N_CORES, BTN_LEFT, BTN_RIGHT, BTN_FIRE, BTN_RESPAWN, LEVEL_SHIFT
-
+from cpu_host import CpuSim, N_CORES, BTN_LEFT, BTN_RIGHT, BTN_FIRE, BTN_RESPAWN, LEVEL_SHIFT,BTN_RESTART
 PLAYER_Y, HIT_R, COOLDOWN = 240, 8, 30
 UPGRADE_SCORES = (100, 300, 600)   # score needed for 2, 3 and 4 shots in flight
 
@@ -32,7 +31,7 @@ class Game:
         self.flash, self.cool = 0, 0
         self.ents, self.alive_prev = [], [1] * N_CORES
         self.px, self.shots = 128, []
-        self.want_respawn = not first          # the CPU spawns wave 1 by itself at power-on
+        self.want_restart = not first          # the CPU spawns wave 1 by itself at power-on
         self.parked_kills = 0                  # must stay 0: a parked shot can never hit
 
     def weapon_level(self):
@@ -49,11 +48,10 @@ class Game:
         if self.cool:
             self.cool -= 1
         buttons = (BTN_LEFT if left else 0) | (BTN_RIGHT if right else 0) | (BTN_FIRE if fire else 0)
-        buttons |= (self.weapon_level() - 1) << LEVEL_SHIFT
-        if self.want_respawn:
-            buttons |= BTN_RESPAWN
+        if self.want_restart:
+            buttons |= BTN_RESTART
             self.alive_prev = [1] * N_CORES
-            self.want_respawn = False
+            self.want_restart = False
         _, ents, hosts = self.sim.frame(buttons)
 
         self.px = hosts[0]
@@ -62,9 +60,9 @@ class Game:
         if kills:
             if not self.shots:
                 self.parked_kills += kills
-            self.score += 10 * kills
         self.ents = ents
         self.alive_prev = [e[1] for e in ents]
+        self.score = 10 * (self.sim.kills or 0)    # the CPU's own total (one frame behind)
 
         if not self.cool:                      # enemy touches the player (display-side rule)
             for e in ents:
@@ -76,7 +74,6 @@ class Game:
             self.over = True
         elif sum(self.alive_prev) == 0:        # wave cleared: ask the CPU for 32 new enemies
             self.wave += 1
-            self.want_respawn = True
 
     def bot_action(self):
         targets = [e for e in self.ents if e[1] and e[3] < PLAYER_Y - 12]

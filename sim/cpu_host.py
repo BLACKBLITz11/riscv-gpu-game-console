@@ -30,6 +30,7 @@ RTL = GPU_RTL + CPU_RTL + ['sim_cpu_server.v']
 
 # controller bits read by game.asm
 BTN_LEFT, BTN_RIGHT, BTN_FIRE, BTN_RESPAWN = 4, 8, 16, 32
+BTN_RESTART = 2
 LEVEL_SHIFT = 6               # bits 7:6 of the button register carry (weapon level - 1)
 
 
@@ -129,8 +130,30 @@ def kill_test(frames=150):
     print("=== KILL COUNTER OK ===" if ok else "=== KILL COUNTER FAILED ===")
     return ok
 
+def wave_test(max_frames=600):
+    """When the last enemy dies, the CPU must spawn a new wave by itself."""
+    sim = CpuSim()
+    ok = False
+    for i in range(max_frames):
+        sweep = BTN_LEFT if (i // 25) % 2 else BTN_RIGHT
+        tick, ents, hosts = sim.frame(BTN_FIRE | sweep | (3 << LEVEL_SHIFT))
+        if sum(e[1] for e in ents) == 0:
+            tick, ents, hosts = sim.frame(0)
+            alive = sum(e[1] for e in ents)
+            print(f"wave cleared at frame {i + 1}; next frame: {alive} alive, "
+                  f"CPU kills {sim.kills}, CPU previous-alive {sim.prev_alive}")
+            ok = (alive > 0 and sim.prev_alive == N_CORES and sim.kills == N_CORES)
+            break
+    else:
+        print("no wave was cleared in the test run, so nothing was proven")
+    sim.close()
+    print("=== WAVE OK ===" if ok else "=== WAVE FAILED ===")
+    return ok
+
 if __name__ == '__main__':
     ok = selftest()
     if '--kills' in sys.argv:
         ok = kill_test() and ok
+    if '--waves' in sys.argv:
+        ok = wave_test() and ok
     sys.exit(0 if ok else 1)
