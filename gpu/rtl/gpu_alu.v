@@ -36,8 +36,13 @@ module alu (
             ADD:  result = a + b;
             SUB:  result = a - b;
             MUL:  result = a * b;
+`ifdef SMALL_ALU
+            DIV:  result = 32'h0;   // FPGA build: no hardware divider (saves thousands of LUTs)
+            MOD:  result = 32'h0;
+`else
             DIV:  result = (b == 32'h0) ? 32'h0 : a / b;   // guard divide-by-zero
             MOD:  result = (b == 32'h0) ? 32'h0 : a % b;   // guard divide-by-zero
+`endif
             AND:  result = a & b;
             OR:   result = a | b;
             XOR:  result = a ^ b;

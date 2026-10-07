@@ -5,3 +5,6 @@ __pycache__/
 *.vcd
 *.log
 sim/cpusimwork/
+fpga/log_*.txt
+fpga/util_*.txt
+fpga/help.txt
