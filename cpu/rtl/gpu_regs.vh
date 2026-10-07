@@ -42,4 +42,4 @@
 `define GPU_SHOT2_X       8'h40
 `define GPU_SHOT2_Y       8'h44
 `define GPU_SHOT3_X       8'h48
-`define GPU_SHOT3_Y       8'h4C
+`define GPU_SHOT3_Y       8'h4C`define GPU_ALIVE      8'h50   // read: alive entities after the last render

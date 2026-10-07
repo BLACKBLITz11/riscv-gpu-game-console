@@ -25,7 +25,8 @@ module gpu_bridge #(
     output     [31:0] spawn_data,
     output            render_start,
     input             all_done,
-    input             render_busy
+    input             render_busy,
+    input      [7:0]  alive_count
 );
     // address registers that are written first, then used when DATA is written
     reg [CORE_W-1:0] spawn_core_r;
@@ -86,6 +87,8 @@ module gpu_bridge #(
     always @* begin
         if (gpu_offset == `GPU_STATUS)
             gpu_rdata = {29'b0, dropped, render_busy, all_done};
+        else if (gpu_offset == `GPU_ALIVE)
+            gpu_rdata = {24'b0, alive_count};
         else
             gpu_rdata = 32'b0;
     end

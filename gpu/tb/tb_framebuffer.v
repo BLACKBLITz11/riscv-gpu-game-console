@@ -14,6 +14,7 @@ module tb_framebuffer;
     reg         spawn_we = 0; reg [4:0]  spawn_core = 0; reg [5:0]  spawn_addr = 0; reg [31:0] spawn_data = 0;
     reg  [7:0]  fb_x = 0, fb_y = 0;
     wire all_done, render_busy, render_done, fb_pixel;
+    wire [7:0] alive_count;
     integer errors = 0, frames = 0, hits = 0, respawns = 0, done_count = 0, render_gate_ok = 0, tick_gate_ok = 0, both_ok = 0, mid_ok = 0;
     integer t, i, x, y, seed, cyc, k, plen_words, mism, pop, last_render_cycles;
     gpu_top #(.N_CORES(N), .START_HALTED(1), .HAS_FB(1)) uut (
@@ -22,7 +23,7 @@ module tb_framebuffer;
         .host_we(host_we), .host_addr(host_addr), .host_wdata(host_wdata),
         .spawn_we(spawn_we), .spawn_core(spawn_core), .spawn_addr(spawn_addr), .spawn_data(spawn_data),
         .render_start(render_start), .render_busy(render_busy), .render_done(render_done),
-        .fb_x(fb_x), .fb_y(fb_y), .fb_pixel(fb_pixel));
+        .fb_x(fb_x), .fb_y(fb_y), .fb_pixel(fb_pixel), .alive_count(alive_count));
     always #5 clk = ~clk;
     always @(posedge clk) if (render_done) done_count = done_count + 1;
 
@@ -113,6 +114,18 @@ module tb_framebuffer;
     end
     endtask
 
+    task check_alive;
+        integer q, n;
+    begin
+        n = 0;
+        for (q = 0; q < N; q = q + 1) if (m_al[q]) n = n + 1;
+        if (alive_count !== n) begin
+            errors = errors + 1;
+            $display("FAIL tick %0d: alive_count %0d, expected %0d", t, alive_count, n);
+        end
+    end
+    endtask
+
     task check_frame;
     begin
         for (i = 0; i < 65536; i = i + 1) exp_fb[i] = 1'b0;
@@ -144,7 +157,7 @@ module tb_framebuffer;
         for (i = 0; i < N; i = i + 1) begin random_entity(i, (i % 8 == 0) ? 1'b0 : 1'b1); spawn_entity(i); end
 
         // frame 0: before any tick, straight from the spawned state
-        t = 0; do_render(0); check_frame;
+        t = 0; do_render(0); check_alive; check_frame;
         $display("frame of initial state: %0d lit pixels, render took %0d cycles", pop, last_render_cycles);
 
         for (t = 1; t <= TICKS; t = t + 1) begin
@@ -172,7 +185,7 @@ module tb_framebuffer;
                 end
 
             do_render((t == 5) ? 1 : 0);
-            if (t % 5 == 0) check_frame;     // full 65536-pixel readback every 5th tick (it is slow)
+            if (t % 5 == 0) check_alive;check_frame;     // full 65536-pixel readback every 5th tick (it is slow)
         end
         $display("ticks=%0d frames_checked=%0d (x65536 pixels) hits=%0d respawns=%0d", TICKS, frames, hits, respawns);
         if (render_gate_ok == 1) $display("PASS: start/spawn ignored while a frame renders");

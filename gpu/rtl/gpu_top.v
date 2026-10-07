@@ -39,7 +39,8 @@ module gpu_top #(
     output        render_done,    // 1-cycle pulse when the frame is complete
     input  [7:0]  fb_x,
     input  [7:0]  fb_y,
-    output        fb_pixel
+    output        fb_pixel,
+    output [7:0]  alive_count   // alive entities in the last completed render (0 if HAS_FB=0)
 );
 
     // NOTE: no dispatch_unit / thread batching here -- with N_CORES==32
@@ -143,12 +144,13 @@ module gpu_top #(
                 .render_start(render_start & ~start),
                 .busy(render_busy), .done(render_done),
                 .peek_core(fb_peek_core), .peek_addr(fb_peek_addr), .peek_data(fb_peek_data),
-                .rd_x(fb_x), .rd_y(fb_y), .rd_pixel(fb_pixel)
+                .rd_x(fb_x), .rd_y(fb_y), .rd_pixel(fb_pixel), .alive_count(alive_count)
             );
         end else begin : nofb
             assign render_busy   = 1'b0;
             assign render_done   = 1'b0;
             assign fb_pixel      = 1'b0;
+            assign alive_count   = 8'd0;
             assign fb_peek_core  = {CORE_W{1'b0}};
             assign fb_peek_addr  = 6'd0;
         end

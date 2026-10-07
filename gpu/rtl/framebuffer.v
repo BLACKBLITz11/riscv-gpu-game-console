@@ -6,7 +6,9 @@
 //                cores' local_mem read port and set that pixel if alive
 // Erase-then-draw (not clear-all) keeps a frame at ~4*N cycles, not 65536.
 //
-// Pixel readout: rd_x / rd_y -> rd_pixel (asynchronous read).
+// alive_count: number of alive entities seen by the last COMPLETED frame.
+//
+// Pixel readout: rd_x / rd_y -> rd_pixel (registered: valid one clock later).
 module framebuffer #(
     parameter N_CORES    = 32,
     parameter CORE_W     = (N_CORES <= 1) ? 1 : $clog2(N_CORES),
@@ -20,6 +22,7 @@ module framebuffer #(
     input                 render_start,  // 1-cycle pulse
     output                busy,          // high while rendering
     output reg            done,          // 1-cycle pulse when a frame is finished
+    output reg [7:0]      alive_count,   // alive entities in the last finished frame
 
     // read port into the cores' local_mem (via gpu_top)
     output [CORE_W-1:0]   peek_core,
@@ -41,11 +44,13 @@ module framebuffer #(
     reg [1:0]        sub;
     reg              alive_r;
     reg [7:0]        px_r;
+    reg [7:0]        acc;      // running alive count during a frame
 
     assign busy      = (st != IDLE);
     assign peek_core = c;
     assign peek_addr = (sub == 2'd0) ? ADDR_ALIVE[5:0] :
                        (sub == 2'd1) ? ADDR_X[5:0]     : ADDR_Y[5:0];
+
     // registered (synchronous) read: lets the tools use block RAM on the FPGA.
     // rd_pixel is valid one clock after rd_x / rd_y change.
     reg rd_pixel_r;
@@ -72,6 +77,7 @@ module framebuffer #(
         done <= 0;
         if (rst) begin
             st <= IDLE; c <= 0; sub <= 0; alive_r <= 0; px_r <= 0;
+            acc <= 0; alive_count <= 0;
 `ifndef SYNTHESIS
             for (j = 0; j < 65536; j = j + 1) fb[j] <= 1'b0;   // simulation only
 `endif
@@ -80,7 +86,7 @@ module framebuffer #(
         else begin
             case (st)
                 IDLE: if (render_start && all_done) begin
-                    st <= ERASE; c <= 0; sub <= 0;
+                    st <= ERASE; c <= 0; sub <= 0; acc <= 0;
                 end
 
                 ERASE: begin
@@ -96,9 +102,13 @@ module framebuffer #(
                         if (alive_r) begin
                             prev_xy[c]                  <= {peek_data[7:0], px_r};
                             prev_valid[c]               <= 1'b1;
+                            acc                         <= acc + 8'd1;
                         end
                         sub <= 2'd0;
-                        if (c == N_CORES-1) begin st <= IDLE; done <= 1'b1; end
+                        if (c == N_CORES-1) begin
+                            st <= IDLE; done <= 1'b1;
+                            alive_count <= acc + (alive_r ? 8'd1 : 8'd0);
+                        end
                         else c <= c + 1'b1;
                     end
                 endcase
