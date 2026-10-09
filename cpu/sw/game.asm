@@ -15,6 +15,7 @@
 .equ GPU_SHOT0_X,    0x30       # shot slot k: x at 0x30 + 8k, y at 0x34 + 8k
 .equ GPU_SHOT0_Y,    0x34
 .equ CTRL_BUTTONS,   0x100
+.equ CTRL_FRAME,     0x104      # read-only: 60 Hz video frame counter
 
 # button bits (bits 6-7 carry the weapon level - 1, set by the host)
 .equ BTN_LEFT,    4
@@ -43,9 +44,11 @@
 #   s9 = fire cooldown   s10 = buttons       s11 = shot slots in use (weapon level, 1..4)
 # data RAM: shot slot k at byte 8k: x at +0, y at +4 (y > 255 means the slot is free)
 #   s3 = alive count after the previous frame     s4 = total kills
+#   s5 = last video frame number seen
 
 start:
     lui  s0, 0x40000
+    lw   s5, CTRL_FRAME(s0)
     li   s1, 128
     li   s2, PLAYER_Y
     li   s6, 0x2545F491
@@ -63,6 +66,10 @@ init_slots:
 
 # ---- one frame per pass ----
 frame:
+wait_vblank:                        # one game frame per video frame
+    lw   t0, CTRL_FRAME(s0)
+    beq  t0, s5, wait_vblank
+    mv   s5, t0
 wait_idle:                          # GPU idle = all_done 1 and render_busy 0
     lw   t0, GPU_STATUS(s0)
     andi t0, t0, 3
@@ -173,12 +180,7 @@ wait_tick:                          # wait for all_done
     li   t1, 1
     sw   t1, GPU_RENDER(s0)
 
-    li   t0, FRAME_DELAY            # software frame pacing
-delay:
-    addi t0, t0, -1
-    bnez t0, delay
-
-wait_render:                        # wait for the frame to finish drawing
+wait_render:                       # wait for the frame to finish drawing
     lw   t0, GPU_STATUS(s0)
     andi t0, t0, 2                  # bit 1 = render_busy
     bnez t0, wait_render

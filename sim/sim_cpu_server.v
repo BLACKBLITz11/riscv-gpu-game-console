@@ -32,13 +32,20 @@ module sim_cpu_server;
     wire [5:0]  spawn_addr;
     wire        all_done, render_busy, render_done, fb_pixel;
     wire [7:0]  alive_count;
+    reg [7:0]   fcount = 8'd0;          // fake video frame counter for the simulation
+
+    reg [10:0]  fdiv   = 11'd0;
+    always @(posedge clk) begin
+        if (fdiv == 11'd1999) begin fdiv <= 11'd0; fcount <= fcount + 8'd1; end
+        else fdiv <= fdiv + 11'd1;
+    end
 
     wire        g_prog_we   = prog_we | ld_we;
     wire [7:0]  g_prog_addr = ld_we ? ld_addr : prog_addr;
     wire [31:0] g_prog_data = ld_we ? ld_data : prog_data;
 
     cpu_system #(.INIT_FILE("game.hex")) cpu (
-        .clk(clk), .rst(cpu_rst), .buttons(buttons), .frame_count(8'd0), .gpu_we(gpu_we), .gpu_re(),
+        .clk(clk), .rst(cpu_rst), .buttons(buttons), .frame_count(fcount), .gpu_we(gpu_we), .gpu_re(),
         .gpu_offset(gpu_offset), .gpu_wdata(gpu_wdata), .gpu_rdata(gpu_rdata), .halted(halted));
 
     gpu_bridge #(.CORE_W(5)) bridge (

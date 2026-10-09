@@ -10,7 +10,7 @@ module tb_console_top;
 
     wire hs, vs;
     wire [3:0] r, g, b;
-    console_top #(.N_CORES(32), .CPU_HEX("fpga/game.hex"), .GPU_HEX("gpu/sw/entity_update.hex")) dut (
+    console_top #(.N_CORES(32), .CPU_HEX("fpga/game.hex"), .GPU_HEX("gpu/sw/entity_update.hex"), .SIM_FAST(1)) dut (
         .clk(clk), .rst(rst),
         .btnl(1'b0), .btnr(1'b1), .btnc(1'b1), .btnu(1'b0), .btnd(1'b0), .sw(2'b01),
         .vga_hs(hs), .vga_vs(vs), .vga_r(r), .vga_g(g), .vga_b(b));

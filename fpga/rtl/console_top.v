@@ -2,7 +2,8 @@
 //   CPU + bridge + GPU (+ framebuffer) + VGA scan-out + GPU program loader.
 module console_top #(
     parameter N_CORES = 32,
-    parameter CPU_HEX = "game.hex",            // CPU program (from game.asm)
+    parameter GPU_HEX = "entity_update.hex",   // GPU program (from entity_update.asm)
+    parameter SIM_FAST = 0                     // 1 = simulation only: a frame every 8192 clocks
     parameter GPU_HEX = "entity_update.hex"    // GPU program (from entity_update.asm)
 ) (
     input        clk,          // 40 MHz
@@ -42,10 +43,18 @@ module console_top #(
     wire        gpu_we, cpu_halted;
     wire [7:0]  gpu_offset;
     wire [31:0] gpu_wdata, gpu_rdata;
-    wire [7:0]  frame_count;
+    wire [7:0]  vga_frame_count;
+    reg  [12:0] fast_div = 13'd0;
+    reg  [7:0]  fast_count = 8'd0;
+
+    always @(posedge clk) begin
+        fast_div <= fast_div + 13'd1;
+        if (&fast_div) fast_count <= fast_count + 8'd1;
+    end
+    wire [7:0]  frame_count = SIM_FAST ? fast_count : vga_frame_count;
 
     cpu_system #(.INIT_FILE(CPU_HEX)) cpu (
-        .clk(clk), .rst(cpu_rst), .buttons(buttons), .frame_count(frame_count),
+        .clk(clk), .rst(cpu_rst), .buttons(buttons), .frame_count(vga_frame_count),
         .gpu_we(gpu_we), .gpu_re(), .gpu_offset(gpu_offset), .gpu_wdata(gpu_wdata),
         .gpu_rdata(gpu_rdata), .halted(cpu_halted));
 
