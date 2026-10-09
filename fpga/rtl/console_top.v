@@ -1,10 +1,10 @@
 // console_top.v -- the whole console on one 40 MHz clock:
 //   CPU + bridge + GPU (+ framebuffer) + VGA scan-out + GPU program loader.
 module console_top #(
-    parameter N_CORES = 32,
-    parameter GPU_HEX = "entity_update.hex",   // GPU program (from entity_update.asm)
-    parameter SIM_FAST = 0,                     // 1 = simulation only: a frame every 8192 clocks
-    parameter GPU_HEX = "entity_update.hex"    // GPU program (from entity_update.asm)
+    parameter N_CORES  = 32,
+    parameter CPU_HEX  = "game.hex",            // CPU program (from game.asm)
+    parameter GPU_HEX  = "entity_update.hex",   // GPU program (from entity_update.asm)
+    parameter SIM_FAST = 0                      // 1 = simulation only: a frame every 8192 clocks
 ) (
     input        clk,          // 40 MHz
     input        rst,          // active high (asynchronous button)
