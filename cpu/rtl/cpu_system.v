@@ -8,6 +8,7 @@ module cpu_system #(
     input         clk,
     input         rst,
     input  [7:0]  buttons,       // bit0 up, 1 down, 2 left, 3 right, 4 fire
+    input  [7:0]  frame_count,   // 60 Hz frame counter, read at 0x4000_0104
     output        gpu_we,
     output        gpu_re,
     output [7:0]  gpu_offset,
@@ -46,5 +47,5 @@ module cpu_system #(
     assign gpu_wdata  = bus_wdata;
 
     assign bus_rdata = sel_gpu  ? gpu_rdata :
-                       sel_ctrl ? {24'b0, buttons} : ram_rdata;
+                  sel_ctrl ? (bus_addr[2] ? {24'b0, frame_count} : {24'b0, buttons}) : ram_rdata;
 endmodule

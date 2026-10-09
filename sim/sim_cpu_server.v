@@ -38,7 +38,7 @@ module sim_cpu_server;
     wire [31:0] g_prog_data = ld_we ? ld_data : prog_data;
 
     cpu_system #(.INIT_FILE("game.hex")) cpu (
-        .clk(clk), .rst(cpu_rst), .buttons(buttons), .gpu_we(gpu_we), .gpu_re(),
+        .clk(clk), .rst(cpu_rst), .buttons(buttons), .frame_count(8'd0), .gpu_we(gpu_we), .gpu_re(),
         .gpu_offset(gpu_offset), .gpu_wdata(gpu_wdata), .gpu_rdata(gpu_rdata), .halted(halted));
 
     gpu_bridge #(.CORE_W(5)) bridge (

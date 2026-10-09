@@ -8,3 +8,5 @@ sim/cpusimwork/
 fpga/log_*.txt
 fpga/util_*.txt
 fpga/help.txt
+fpga/game.hex
+fpga/game.hex
